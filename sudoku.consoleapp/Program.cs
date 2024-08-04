@@ -6,10 +6,10 @@ int[] input3x3 = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 int[] input4x4 = [1, 2, 3, 4, 5, 6, 7, 8 , 9,10,11,12,13,14,15,16];
 
 
-SudokoGrid.Generate(input3x3);
-SudokoGrid.ShowDesign();
+SudokuGrid.Generate(input3x3);
+SudokuGrid.ShowDesign();
 Console.WriteLine();
-SudokoGrid.ShowValue();
+SudokuGrid.ShowValues();
 
 
 /*

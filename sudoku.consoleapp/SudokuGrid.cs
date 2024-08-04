@@ -2,14 +2,14 @@
 
 namespace sudoku.consoleapp;
 
-public record SudokoGrid
+public record SudokuGrid
 {
     public int SquareNo { get; set; }
     public Axis Position { get; set; }
 
-    private static  Dictionary<SudokoGrid, int> _sudoko = [];
+    private static  Dictionary<SudokuGrid, int> _sudoko = [];
 
-    public static Dictionary<SudokoGrid, int> Generate(int[] input)
+    public static Dictionary<SudokuGrid, int> Generate(int[] input)
     {
         for (int x = 0; x < input.Length; x++)
         {
@@ -26,7 +26,7 @@ public record SudokoGrid
         }
         return _sudoko;
     }
-    public static void ShowValue()
+    public static void ShowValues()
     {
         string output = string.Empty;
         Console.WriteLine("Values:");
