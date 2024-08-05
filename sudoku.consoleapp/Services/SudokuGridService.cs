@@ -4,13 +4,12 @@ using sudoku.consoleapp.Utilities;
 
 namespace sudoku.consoleapp.Services
 {
-    public class SudokuGridService2
+    public class SudokuGridService
     {
         public int MyProperty { get; set; }
         private static Dictionary<SudokuAxis, SudokuItem> _sudoko = [];
         public static void Generate(int squares)
         {
-            
             for (int x = 0; x < squares; x++)
             {
                 for (int y = 0; y < squares; y++)
@@ -21,6 +20,22 @@ namespace sudoku.consoleapp.Services
                         CellValue = 0
                     });
                 }
+            }
+        }
+        public static void GenerateSudoku(int[][] rows)
+        {
+            int x = 0;
+            foreach(var row in rows)
+            {
+                for(int y = 0; y < row.Length; y ++)
+                {
+                    _sudoko.Add(new(x, y), new()
+                    {
+                        SquareNo = CalculateSquareNumber(x, y, row.Length),
+                        CellValue = row[y]
+                    });
+                }
+                x++;
             }
         }
         public static void ShowValues(int boxes)
