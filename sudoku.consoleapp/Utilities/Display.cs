@@ -1,11 +1,9 @@
-﻿
-
-namespace sudoku.consoleapp;
+﻿namespace sudoku.consoleapp.Utilities;
 
 public class Display
 {
 
-    private static Dictionary<int,ConsoleColor?> _colors = [];   
+    private static Dictionary<int, ConsoleColor?> _colors = [];
     public static void WriteYellow(string str)
     {
         Console.ForegroundColor = ConsoleColor.Yellow;
@@ -39,13 +37,35 @@ public class Display
     }
     public static ConsoleColor GenerateRandomColor()
     {
-        Random ran = new ();
+        Random ran = new();
         return (ConsoleColor)ran.Next(1, 13);
     }
     public static ConsoleColor? GetColor(int sqrNo)
     {
         _ = _colors.TryGetValue(sqrNo, out var color);
         return color;
+    }
+
+    public static void DisplayGridItem(int x, int y, int value, int sqr, bool isDesign = false)
+    {
+        Console.Write("|(");
+        WriteYellow(x.ToString(sqr <= 3 ? "#0" : "#00"));
+        Console.Write(",");
+        WriteYellow(y.ToString(sqr <= 3 ? "#0" : "#00"));
+        Console.Write(") ");
+        if (value == 0 && !isDesign)
+        {
+            WriteRed(value.ToString(sqr <= 3 ? "#0" : "#00"));
+        }
+        else if (isDesign)
+        {
+            WriteRandomColor(value.ToString(sqr <= 3 ? "#0" : "#00"));
+        }
+        else
+        {
+            WriteGreen(value.ToString(sqr <= 3 ? "#0" : "#00"));
+
+        }
     }
 }
 

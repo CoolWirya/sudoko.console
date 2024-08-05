@@ -1,18 +1,39 @@
 ﻿
-
-using sudoku.consoleapp;
+using sudoku.consoleapp.Services;
 
 int[] input = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 //int[] input = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
 
+//SudokuLevel dificulty;
+//while (true)
+//{
+//    Console.Write("\nDificulty:\n1.Easy\n2.Medium\n3.Hard\n4.Random\n\nChoose one:");
+//    var consoleInput = Console.ReadLine();
+//    _ = Enum.TryParse<SudokuLevel>(consoleInput.ToLower(), out var level);
+//    if (level == SudokuLevel.none || (int)level < 0 || (int)level > 3 )
+//    {
+//        Display.WriteYellow("\nError ");
+//        Console.Write("->");
+//        Display.WriteRed(" Please enter the correct value, thanks\n");
+//        continue;
+//    }
+//    dificulty = level;
+//    break;
+//}
+//var board = await Api.GetSudokuBoard(dificulty);
 
-SudokuGrid.Generate(input);
-SudokuGrid.ShowDesign(input);
+
+int numberOfSquares = 9;
+SudokuGridService2.Generate(numberOfSquares);
+SudokuGridService2.ShowDesign(numberOfSquares);
+//SudokuGridService2.ShowValues(input);
 Console.WriteLine();
-SudokuGrid.PopulateFirstSqrRootRows(input);
-SudokuGrid.PopulateRemainingRows(input);
-Console.WriteLine();
-SudokuGrid.ShowValues(input);
+SudokuGridService2.PopulateFirstSqrRootRows(numberOfSquares);
+SudokuGridService2.PopulateRemainingRows(numberOfSquares);
+SudokuGridService2.ShowValues(numberOfSquares);
+
+//Console.WriteLine();
+
 
 
 
