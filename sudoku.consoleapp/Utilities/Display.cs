@@ -22,7 +22,7 @@ public class Display
         Console.Write(str);
         Console.ResetColor();
     }
-    public static void ShowSudokuBox(Dictionary<SudokuAxis, SudokuItem> data, string source)
+    public static void ShowSudokuSquare(Dictionary<SudokuAxis, SudokuItem> data, string source)
     {
         Console.Write($"\n{source}");
         foreach (var sudoku in data)
@@ -77,6 +77,22 @@ public class Display
         {
             WriteGreen($"{value}");
         }
+    }
+    public static void ShowRawData(string from, string data)
+    {
+        WriteYellow($"\n{from}");
+        WriteRed(" -> ");
+        Console.WriteLine(data);
+    }
+    public static void ShowStats(double success, int retries, double solvedSuccessRate,List<double> solvedPercentagesList)
+    {
+        Console.WriteLine("\n\n[Puzzle stats]:");
+        WriteGreen("\nPuzzle Solved Rate:");
+        WriteYellow($" {solvedSuccessRate:#0.00}% ");
+        WriteGreen("\nAverage Success Rate:");
+        WriteYellow($" {success:#0.00}%");
+        WriteGreen("\nAverage Solved  Rate:");
+        WriteYellow($" {(solvedPercentagesList.Sum()/ solvedPercentagesList.Count):#0.00}% ");
     }
 }
 

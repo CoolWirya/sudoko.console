@@ -10,56 +10,62 @@ using sudoku.consoleapp.Utilities;
 
 int retries = 0;
 int success = 0;
+List<double> avgSolvedPercentageList = [];
+SudokuLevel dificulty = SudokuLevel.easy;
+
 while (true)
 {
-    SudokuLevel dificulty = SudokuLevel.easy;
-    bool isSuccess = false;
-    string attemptOutput = string.Empty;
-    string solutionOutput = string.Empty;
+    // Get data from sudoku api
     Console.WriteLine("Getting the puzzle ...");
     Display.WriteGreen("It may take time to load\n");
+
     var sudoku = await HttpService.GetSudokuPuzzle(dificulty);
-    if (sudoku is not null)
+    if (sudoku == null)
     {
-        retries++;
-        Display.WriteYellow("\nPuzzle Input");
-        Display.WriteRed(" -> ");
-        Console.WriteLine($"{JsonConvert.SerializeObject(sudoku.Board)}");
-        SudokuGridService.GenerateSudoku(sudoku.Board,"Puzzle");
-        (isSuccess, attemptOutput) = SudokuGridService.SolveSudoku();
-        Display.WriteYellow("\nAttempt Output");
-        Display.WriteRed(" -> ");
-        Console.WriteLine(attemptOutput);
-        Console.WriteLine("\nGetting solution to the puzzle ...");
-        Display.WriteGreen("It may take time to load\n");
-        var result = await HttpService.GetSudokuSolution(sudoku.Board);
-        if (result is not null)
-        {
-            SudokuGridService.GenerateSudoku(result.Solution, $"Solution: Level {result.Difficulty}");
-            solutionOutput = JsonConvert.SerializeObject(result.Solution);
-        }
-        else
-        {
-            Console.WriteLine("No response from the api");
-        }
-        
+        Console.WriteLine("No response from the api, double check your internet");
+        break;
     }
-    else
+
+    // Try to solve the puzzle
+    retries++;
+    Display.ShowRawData("Puzzle Input", $"{JsonConvert.SerializeObject(sudoku.Board)}");
+    SudokuGridService.GenerateSudoku(sudoku.Board, "[Puzzle]:");
+    (bool isSuccess, double SolvedSuccessRate, string AttemptOutput) = SudokuGridService.SolveSudoku();
+    Display.ShowRawData("Attempt Output", AttemptOutput);
+
+    // Get solution from sudoku api
+    Console.WriteLine("\nGetting solution to the puzzle ...");
+    Display.WriteGreen("It may take time to load\n");
+    var result = await HttpService.GetSudokuSolution(sudoku.Board);
+    if (result == null)
     {
-        Console.WriteLine("No response from the api");
+        Console.WriteLine("No response from the api, double check your internet");
+        break;
     }
+    SudokuGridService.GenerateSudoku(result.Solution, $"[Solution]: Level {result.Difficulty}");
+    Display.ShowRawData("Solution Output", JsonConvert.SerializeObject(result.Solution));
+
+    // Show stats
     if (isSuccess)
     {
         success++;
     }
-    Display.WriteYellow("\nSolution Output");
-    Display.WriteRed(" -> ");
-    Console.WriteLine(solutionOutput);
-    Display.WriteGreen("\nSuccess Rate:");
-    Display.WriteYellow($" %{(success / retries) * 100:#0.00}");
+    double successRatePercentage = ((double)success / (double)retries) * 100;
+    avgSolvedPercentageList.Add(SolvedSuccessRate);
+    Display.ShowStats(successRatePercentage, retries, SolvedSuccessRate, avgSolvedPercentageList);
+
+    // Retry
     Display.WriteYellow("\n\n\nPress Enter to get a new puzzle");
     Console.ReadLine();
 }
+
+
+
+
+
+
+
+
 
 
 /* Manual Solver */

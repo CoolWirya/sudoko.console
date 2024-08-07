@@ -27,9 +27,9 @@ namespace sudoku.consoleapp.Services
                 }
                 x++;
             }
-            Display.ShowSudokuBox(_sudoku, message);
+            Display.ShowSudokuSquare(_sudoku, message);
         }
-        public static (bool IsSuccwss, string Solution) SolveSudoku()
+        public static (bool IsSuccess,double solvedCellsPercentage, string Solution) SolveSudoku()
         {
             do
             {
@@ -66,10 +66,9 @@ namespace sudoku.consoleapp.Services
                      */
                 }
             } while (_counter != 0);
-            Display.ShowSudokuBox(_sudoku,"Attempt:");
+            Display.ShowSudokuSquare(_sudoku,"[Attempt]:");
             CheckIfFailedToCompleteThePuzzle();
-            return (CheckForDuplicatesOrEmptyCells(), 
-                JsonConvert.SerializeObject(ConvertArrayToTwoDimentionalArray(_sudoku.Select(n=>n.Value.CellValue).ToArray())));
+            return (CheckForDuplicatesOrEmptyItems(), GetSudokuICellsSolvedPercentage(), ConvertArrayToTwoDimentionalArray());
         }
        
         private static bool CheckHorizontally(KeyValuePair<SudokuAxis,SudokuItem> sudokuItem)
@@ -176,7 +175,7 @@ namespace sudoku.consoleapp.Services
                 }
             }
         }
-        private static bool CheckForDuplicatesOrEmptyCells()
+        private static bool CheckForDuplicatesOrEmptyItems()
         {
             if (_sudoku.Where(n => n.Value.CellValue == 0).Any())
             {
@@ -202,14 +201,22 @@ namespace sudoku.consoleapp.Services
             }
             return true;
         }
-        private static int[][] ConvertArrayToTwoDimentionalArray(int[] sudokuValues)
+        private static double GetSudokuICellsSolvedPercentage()
         {
+            double totalStartEmptyCells = (double) 81 - _sudoku.Where(n=>n.Value.FromInput).Count();
+            double totalSolved = (double) _sudoku.Where(n=>n.Value.CellValue !=0 && n.Value.FromInput == false).Count();
+            return (totalSolved /  totalStartEmptyCells) * 100;
+        }
+        private static string ConvertArrayToTwoDimentionalArray()
+        {
+            int[] sudokuValues = _sudoku.Select(n => n.Value.CellValue).ToArray();
             int chunkSize = 9;
-            return sudokuValues
+            int[][] output =  sudokuValues
             .Select((value, index) => new { value, index })
             .GroupBy(x => x.index / chunkSize)
             .Select(g => g.Select(x => x.value).ToArray())
             .ToArray();
+            return JsonConvert.SerializeObject(output);
         }
     }
 }

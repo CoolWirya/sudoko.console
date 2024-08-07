@@ -9,12 +9,12 @@ namespace sudoku.consoleapp.Services;
 
 public class HttpService
 {
+    private static readonly HttpClient _client = new HttpClient();
     public static async Task<SudokuPuzzle> GetSudokuPuzzle(SudokuLevel level)
     {
         try
         {
-            using HttpClient client = new();
-            return await client.GetFromJsonAsync<SudokuPuzzle>($"https://sugoku.onrender.com/board?difficulty={level}");
+            return await _client.GetFromJsonAsync<SudokuPuzzle>($"https://sugoku.onrender.com/board?difficulty={level}");
         }
         catch { }
         return null;
@@ -24,13 +24,12 @@ public class HttpService
         try
         {
 
-            using HttpClient client = new();
             var content = new FormUrlEncodedContent(new[]
                 {
                     new KeyValuePair<string, string>("board", JsonConvert.SerializeObject(board))
                 });
             content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
-            var response = await client.PostAsync("https://sugoku.onrender.com/solve", content);
+            var response = await _client.PostAsync("https://sugoku.onrender.com/solve", content);
             return await response.Content.ReadFromJsonAsync<SudokuBoard>();
         }
         catch { }
