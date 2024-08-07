@@ -1,9 +1,9 @@
-﻿namespace sudoku.consoleapp.Utilities;
+﻿using sudoku.consoleapp.Models;
+
+namespace sudoku.consoleapp.Utilities;
 
 public class Display
 {
-
-    private static Dictionary<int, ConsoleColor?> _colors = [];
     public static void WriteYellow(string str)
     {
         Console.ForegroundColor = ConsoleColor.Yellow;
@@ -22,49 +22,60 @@ public class Display
         Console.Write(str);
         Console.ResetColor();
     }
-    public static void WriteRandomColor(string str)
+    public static void ShowSudokuBox(Dictionary<SudokuAxis, SudokuItem> data, string source)
     {
-        _ = int.TryParse(str, out int sqrNo);
-        var color = GetColor(sqrNo);
-        if (color is null)
+        Console.Write($"\n{source}");
+        foreach (var sudoku in data)
         {
-            color = GenerateRandomColor();
-            _colors.Add(sqrNo, color);
-        }
-        Console.ForegroundColor = color ?? ConsoleColor.Yellow;
-        Console.Write(str);
-        Console.ResetColor();
-    }
-    public static ConsoleColor GenerateRandomColor()
-    {
-        Random ran = new();
-        return (ConsoleColor)ran.Next(1, 13);
-    }
-    public static ConsoleColor? GetColor(int sqrNo)
-    {
-        _ = _colors.TryGetValue(sqrNo, out var color);
-        return color;
-    }
+            if (sudoku.Key.Y == 0)
+            {
+                Console.WriteLine();
+            }
+            if (sudoku.Key.X == 0 && sudoku.Key.Y == 0)
+            {
+                Display.WriteYellow("\n*-----------------*\n");
 
-    public static void DisplayGridItem(int x, int y, int value, int sqr, bool isDesign = false)
-    {
-        Console.Write("|(");
-        WriteYellow(x.ToString(sqr <= 3 ? "#0" : "#00"));
-        Console.Write(",");
-        WriteYellow(y.ToString(sqr <= 3 ? "#0" : "#00"));
-        Console.Write(") ");
-        if (value == 0 && !isDesign)
-        {
-            WriteRed(value.ToString(sqr <= 3 ? "#0" : "#00"));
+            }
+            if ((sudoku.Key.X == 3 || sudoku.Key.X == 6) && sudoku.Key.Y == 0)
+            {
+                Display.WriteYellow("*-----------------*");
+            }
+            if (sudoku.Key.Y == 0 && (sudoku.Key.X == 3 || sudoku.Key.X == 6))
+            {
+                Console.WriteLine();
+            }
+            if (sudoku.Key.Y == 0)
+            {
+                Display.WriteYellow("|");
+            }
+            Display.ShowSudokuValues(sudoku.Key.X, sudoku.Key.Y, sudoku.Value.CellValue, sudoku.Value.FromInput);
+
+            if (sudoku.Key.Y == 2 || sudoku.Key.Y == 5 || sudoku.Key.Y == 8)
+            {
+                Display.WriteYellow("|");
+            }
+            else
+            {
+                Console.Write(" ");
+            }
         }
-        else if (isDesign)
+        Display.WriteYellow("\n*-----------------*");
+        Console.WriteLine();
+    }
+    public static void ShowSudokuValues(int x, int y, int value, bool fromInput)
+    {
+        
+        if (value == 0)
         {
-            WriteRandomColor(value.ToString(sqr <= 3 ? "#0" : "#00"));
+            WriteRed($"{value}");
+        }
+        else if(fromInput)
+        {
+            Console.Write($"{value}");
         }
         else
         {
-            WriteGreen(value.ToString(sqr <= 3 ? "#0" : "#00"));
-
+            WriteGreen($"{value}");
         }
     }
 }

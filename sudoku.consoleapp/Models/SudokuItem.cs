@@ -7,5 +7,6 @@ namespace sudoku.consoleapp.Models
         public int SquareNo { get; set; }
         public int CellValue { get; set; }
         public List<int> PossibleValues { get; set; }
+        public bool FromInput { get; set; }
     }
 }

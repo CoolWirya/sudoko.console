@@ -8,5 +8,6 @@ namespace sudoku.consoleapp.Models;
 
 public class SudokuBoard
 {
-    public int[][] Board { get; set; }
+    public string Difficulty { get; set; }
+    public int[][] Solution { get; set; }
 }

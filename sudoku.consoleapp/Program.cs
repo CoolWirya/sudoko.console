@@ -1,113 +1,79 @@
 ﻿
+using Newtonsoft.Json;
 using sudoku.consoleapp.Models;
 using sudoku.consoleapp.Services;
 using sudoku.consoleapp.Utilities;
 
 
 
-// Get dificulties
-SudokuLevel dificulty;
+/* Stress test */
+
+int retries = 0;
+int success = 0;
 while (true)
 {
-    Console.Write("\nDificulty:\n1.Easy\n2.Medium\n3.Hard\n4.Random\n\nChoose one:");
-    var consoleInput = Console.ReadLine();
-    _ = Enum.TryParse<SudokuLevel>(consoleInput.ToLower(), out var level);
-    if (level == SudokuLevel.none || (int)level < 0 || (int)level > 3)
+    SudokuLevel dificulty = SudokuLevel.easy;
+    bool isSuccess = false;
+    string attemptOutput = string.Empty;
+    string solutionOutput = string.Empty;
+    Console.WriteLine("Getting the puzzle ...");
+    Display.WriteGreen("It may take time to load\n");
+    var sudoku = await HttpService.GetSudokuPuzzle(dificulty);
+    if (sudoku is not null)
     {
-        Display.WriteYellow("\nError ");
-        Console.Write("->");
-        Display.WriteRed(" Please enter the correct value, thanks\n");
-        continue;
+        retries++;
+        Display.WriteYellow("\nPuzzle Input");
+        Display.WriteRed(" -> ");
+        Console.WriteLine($"{JsonConvert.SerializeObject(sudoku.Board)}");
+        SudokuGridService.GenerateSudoku(sudoku.Board,"Puzzle");
+        (isSuccess, attemptOutput) = SudokuGridService.SolveSudoku();
+        Display.WriteYellow("\nAttempt Output");
+        Display.WriteRed(" -> ");
+        Console.WriteLine(attemptOutput);
+        Console.WriteLine("\nGetting solution to the puzzle ...");
+        Display.WriteGreen("It may take time to load\n");
+        var result = await HttpService.GetSudokuSolution(sudoku.Board);
+        if (result is not null)
+        {
+            SudokuGridService.GenerateSudoku(result.Solution, $"Solution: Level {result.Difficulty}");
+            solutionOutput = JsonConvert.SerializeObject(result.Solution);
+        }
+        else
+        {
+            Console.WriteLine("No response from the api");
+        }
+        
     }
-    dificulty = level;
-    break;
+    else
+    {
+        Console.WriteLine("No response from the api");
+    }
+    if (isSuccess)
+    {
+        success++;
+    }
+    Display.WriteYellow("\nSolution Output");
+    Display.WriteRed(" -> ");
+    Console.WriteLine(solutionOutput);
+    Display.WriteGreen("\nSuccess Rate:");
+    Display.WriteYellow($" %{(success / retries) * 100:#0.00}");
+    Display.WriteYellow("\n\n\nPress Enter to get a new puzzle");
+    Console.ReadLine();
 }
 
-// Get sudoku board
-var response = await Api.GetSudokuBoard(dificulty);
-SudokuGridService.GenerateSudoku(response.Board);
-SudokuGridService.ShowValues(response.Board.Length);
+
+/* Manual Solver */
+
+//int[][] data = [[0, 0, 0, 0, 6, 0, 4, 0, 8], [0, 3, 0, 0, 5, 8, 6, 0, 9], [5, 0, 8, 0, 7, 0, 1, 0, 0], [0, 0, 0, 0, 0, 6, 8, 9, 0], [4, 0, 0, 0, 0, 0, 0, 3, 0], [7, 0, 9, 0, 1, 2, 5, 0, 0], [0, 2, 1, 7, 0, 4, 9, 0, 5], [8, 0, 0, 0, 0, 1, 3, 6, 4], [0, 4, 0, 6, 0, 5, 0, 0, 2]];
+////int[][] data = [[0, 0, 0, 9, 0, 5, 0, 0, 0], [0, 3, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 2, 0, 0, 1, 0, 0], [1, 0, 0, 4, 0, 6, 0, 0, 0], [4, 5, 6, 7, 8, 0, 0, 0, 3], [0, 9, 0, 3, 1, 2, 5, 4, 0], [3, 0, 0, 0, 9, 1, 6, 0, 7], [5, 6, 0, 8, 7, 0, 9, 0, 4], [0, 7, 8, 0, 0, 0, 0, 5, 1]];
+//SudokuGridService.GenerateSudoku(data,"Puzzle:");
+//SudokuGridService.SolveSudoku();
+//Console.WriteLine("\nGetting solution to the puzzle ...");
+//Display.WriteGreen("It may take time to load\n");
+//var result = await HttpService.GetSudokuSolution(data);
+//SudokuGridService.GenerateSudoku(result.Solution, $"Solution: Level {result.Difficulty}");
 
 
-
-
-
-
-
-
-
-
-
-/*Mustafa's Assignment*/
-//int numberOfSquares = 9;
-//SudokuGridService.Generate(numberOfSquares);
-//SudokuGridService.ShowDesign(numberOfSquares);
-//Console.WriteLine();
-//SudokuGridService.PopulateFirstSqrRootRows(numberOfSquares);
-//SudokuGridService.PopulateRemainingRows(numberOfSquares);
-//SudokuGridService.ShowValues(numberOfSquares);
-
-
-
-
-/*
-
-
-    (0,0) -- (0,1) -- (0,2)- ||--(0,3) -- (0,4) -- (0,5)- ||--(0,6) -- (0,7) -- (0,8)
-    |   1  |   2    |   3    ||    4   |    5   |    6   ||    7    |    8    |   9   |
-    (1,0) -- (1,1) -- (1,2)- ||--(1,3) -- (1,4) -- (1,5)- ||--(1,6) -- (1,7) -- (1,8)
-    |   4  |   5    |   6    ||    7   |    8   |    9   ||    1    |    2    |   3   |
-    (2,0) -- (2,1) -- (2,2)- ||--(2,3) -- (2,4) -- (2,5)- ||--(2,6) -- (2,7) -- (2,8)
-    |   7  |   8    |   9    ||    1   |    2   |    3   ||    4    |    5    |   6   |
-    (3,0) -- (3,1) -- (3,2)- ||--(3,3) -- (3,4) -- (3,5)- ||--(3,6) -- (3,7) -- (3,8)
-    |   3  |   1    |   2    ||    6   |    4   |    5   ||    9    |    7    |   8   |
-    (4,0) -- (4,1) -- (4,2)- ||--(4,3) -- (4,4) -- (4,5)- ||--(4,6) -- (4,7) -- (4,8)
-    |   6  |   4    |   5    ||    9   |    7   |    8   ||    3    |    1    |   2   |
-    (5,0) -- (5,1) -- (5,2)- ||--(5,3) -- (5,4) -- (5,5)- ||--(5,6) -- (5,7) -- (5,8)
-    |   9  |   7    |   8    ||    3   |    1   |    2   ||    6    |    4    |   5   |
-    (6,0) -- (6,1) -- (6,2)- ||--(6,3) -- (6,4) -- (6,5)- ||--(6,6) -- (6,7) -- (6,8)
-    |   2  |   3    |   1    ||    5   |    6   |    4   ||    8    |    9    |   7   |
-    (7,0) -- (7,1) -- (7,2)- ||--(7,3) -- (7,4) -- (7,5)- ||--(7,6) -- (7,7) -- (7,8)
-    |   5  |   6    |   4    ||    8   |    9   |    7   ||    2    |    3    |   1   |
-    (8,0) -- (8,1) -- (8,2)- ||--(8,3) -- (8,4) -- (8,5)- ||--(8,6) -- (8,7) -- (8,8)
-    |   8  |   9    |   7    ||    2   |    3   |    1    ||    5    |    6    |   4   |
-    -----------------------------------------------------------------------------------
-
-    Patterns:
-    first row is the list
-    second row is first + 3
-    third row is second + 3
-    fourth row first digit is + 2 rest - 1 of the first row
-    fifth       //                                second row
-    sixth       //                                third row
-    seventh row second digit is + 2 rest - 1 of the fourth row
-    Eighth        //                              fifth row
-    Nineth        //                              sixth row
-     */
-
-/*
-(0,0) - (2,2)
-(0,3) - (2,5)
-(0,6) - (2,8)
-
-Xmin = 0 Xmin = 2
-Ymin = 0 Ymin = 2
-
-Xmin = 0 Xmin = 2
-Ymin = 3 Ymin = 5
-
-Xmin = 0 Xmin = 2
-Ymin = 6 Ymin = 8
-
-Xmin = 3 Xmin = 5
-Ymin = 0 Ymin = 2
-
-Get Square Number Formula = Formula x + Formula y
-Formula x  = (int) ( X / Root(max value)) * Root(max value)
-Formula y = (int) (y / Root(max value)
-
-
-*/
 
 
 
