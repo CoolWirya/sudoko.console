@@ -9,6 +9,7 @@ namespace sudoku.consoleapp.Services
     public class SudokuGridService
     {
         private static Dictionary<SudokuAxis, SudokuItem> _sudoku = [];
+        private static List<Dictionary<SudokuAxis, SudokuItem>> _snapshots = [];
         private static int _counter = 0;
         public static void GenerateSudoku(int[][] rows, string message)
         {
@@ -29,155 +30,96 @@ namespace sudoku.consoleapp.Services
             }
             Display.ShowSudokuSquare(_sudoku, message);
         }
-        public static (bool IsSuccess,double solvedCellsPercentage, string Solution) SolveSudoku()
+        public static (bool IsSuccess, double solvedCellsPercentage, string Solution) SolveSudoku()
         {
+            bool nakedPairTried = false;
             do
             {
                 _counter = 0;
+                CheckNewPossibilities();
                 var emptyCells = _sudoku.Where(n => n.Value.CellValue == 0).ToList();
-                foreach (var sudokuItem in emptyCells)
+
+                foreach (var empty in emptyCells)
                 {
-                    if(CheckHorizontally(sudokuItem))
-                    {
-                        continue;
-                    }
-
-                    if (CheckVertically(sudokuItem))
-                    {
-                        continue;
-                    }
-                    if (CheckSquare(sudokuItem))
-                    {
-                        continue;
-                    }
-                    if (CheckHorizontallyVerticallyAndTheSquare(sudokuItem))
-                    {
-                        continue;
-                    }
-                    if(CheckByComparingPossibilities(sudokuItem))
-                    {
-                        continue;
-                    }
-
-                    /* Notes on other algorithms to be implemented*/
-                    /*
-                     If two cells in the same row, column, or block (also known as a box) contain exactly the same two candidates, 
-                    those two candidates cannot appear in any other cells within that same row, column, or block
-                     */
+                    CheckByComparingPossibilities(empty);
+                }
+                if (_counter == 0 && !nakedPairTried)
+                {
+                    SolvedTwoNakedTwinsRandomlyAndCreateSnapshot();
+                    nakedPairTried = true;
+                    _counter++;
                 }
             } while (_counter != 0);
-            Display.ShowSudokuSquare(_sudoku,"[Attempt]:");
-            CheckIfFailedToCompleteThePuzzle();
-            return (CheckForDuplicatesOrEmptyItems(), GetSudokuICellsSolvedPercentage(), ConvertArrayToTwoDimentionalArray());
-        }
-       
-        private static bool CheckHorizontally(KeyValuePair<SudokuAxis,SudokuItem> sudokuItem)
-        {
-            // Get all x-axis cells values
-            var xValues = _sudoku.Where(n => n.Key.Y == sudokuItem.Key.Y && n.Value.CellValue != 0).
-                Select(n => n.Value.CellValue).ToList();
-            if (xValues.Count == 8)
-            {
-                FindTheMissingNumber(xValues, sudokuItem);
-                return true;
-            }
-            return false;
-        }
-        private static bool CheckVertically(KeyValuePair<SudokuAxis, SudokuItem> sudokuItem)
-        {
-            // Get all y-axis cells values
-            var yValues = _sudoku.Where(n => n.Key.X == sudokuItem.Key.X && n.Value.CellValue != 0)
-                .Select(n => n.Value.CellValue).ToList();
-
-            if (yValues.Count == 8)
-            {
-                FindTheMissingNumber(yValues, sudokuItem);
-                return true;
-            }
-            return false ;
-        }
-        private static bool CheckSquare(KeyValuePair<SudokuAxis, SudokuItem> sudokuItem)
-        {
-            // Get cell square values
-            var sValues = _sudoku.Where(n => n.Value.SquareNo == sudokuItem.Value.SquareNo && n.Value.CellValue != 0)
-                .Select(n => n.Value.CellValue).ToList();
-            if (sValues.Count == 8)
-            {
-                FindTheMissingNumber(sValues, sudokuItem);
-                return true;
-            };
-            return false ;
-        }
-        private static bool CheckHorizontallyVerticallyAndTheSquare(KeyValuePair<SudokuAxis, SudokuItem> sudokuItem)
-        {
-            var xValues = _sudoku.Where(n => n.Key.Y == sudokuItem.Key.Y && n.Value.CellValue != 0).Select(n => n.Value.CellValue).ToList();
-            var yValues = _sudoku.Where(n => n.Key.X == sudokuItem.Key.X && n.Value.CellValue != 0).Select(n => n.Value.CellValue).ToList();
-            var sValues = _sudoku.Where(n => n.Value.SquareNo == sudokuItem.Value.SquareNo && n.Value.CellValue != 0).Select(n => n.Value.CellValue).ToList();
-            var allNumbers = xValues.Concat(yValues).Concat(sValues).Distinct().ToList();
-            if (allNumbers.Count == 8)
-            {
-                FindTheMissingNumber(allNumbers, sudokuItem);
-                return true;
-            }
-            sudokuItem.Value.PossibleValues = FindMissingPossibilities(allNumbers);
-            _sudoku[sudokuItem.Key] = sudokuItem.Value;
-            return false ;
+           
+            Display.ShowSudokuSquare(_sudoku, "[Attempt]:");
+            Display.CheckIfFailedToCompleteThePuzzle(_sudoku);
+            return (HasNoDuplicatesOrEmptyItems(), GetSudokuICellsSolvedPercentage(), ConvertArrayToTwoDimentionalArray());
         }
         private static bool CheckByComparingPossibilities(KeyValuePair<SudokuAxis, SudokuItem> sudokuItem)
         {
             var otherEmptyCellsPossibilities = _sudoku
                 .Where(n => n.Key != sudokuItem.Key && n.Value.SquareNo == sudokuItem.Value.SquareNo && n.Value.CellValue == 0)
-                .Select(n => n.Value.PossibleValues).ToList();
-            List<int> combinePossibilities = [];
-            foreach (var otherPossibilities in otherEmptyCellsPossibilities)
-            {
-                if (otherPossibilities is not null)
-                {
-                    combinePossibilities = combinePossibilities.Concat(otherPossibilities).Distinct().ToList();
-                }
-                else
-                {
-                    return false;
-                }
-            }
-            var remainingPossibility = sudokuItem.Value.PossibleValues.Except(combinePossibilities);
+                .SelectMany(n => n.Value.PossibleValues).Distinct();
+           
+            var remainingPossibility = sudokuItem.Value.PossibleValues.Except(otherEmptyCellsPossibilities);
             if (remainingPossibility.Count() == 1)
             {
-                int value = (int)remainingPossibility.FirstOrDefault();
-                _sudoku[sudokuItem.Key].CellValue = value;
+                sudokuItem.Value.CellValue = (int)remainingPossibility.FirstOrDefault();
+                if(!HasNoDuplicates())
+                {
+                    sudokuItem.Value.CellValue = 0;
+                    return false;
+                }
+                CheckNewPossibilities();
                 _counter++;
                 return true;
             }
             return false;
         }
-        public static void FindTheMissingNumber(List<int> otherNumbers, KeyValuePair<SudokuAxis, SudokuItem> sudoku)
+        public static void SolvedTwoNakedTwinsRandomlyAndCreateSnapshot()
         {
-            List<int> possibleValues = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-            int missingValue = possibleValues.Except(otherNumbers).FirstOrDefault();
-            sudoku.Value.CellValue = missingValue;
-            _sudoku[sudoku.Key] = sudoku.Value;
-            _counter++;
+            Display.ShowSudokuSquare(_sudoku, "[Attempt]:");
+            var twoPossibilitiesList = _sudoku.Where(n => n.Value.CellValue == 0 && n.Value.PossibleValues?.Count == 2).ToList();
+            if (twoPossibilitiesList is null)
+            {
+                return;
+            }
+            foreach (var cell in twoPossibilitiesList)
+            {
+                var twins = twoPossibilitiesList.Where(n => n.Key != cell.Key && n.Value.CellValue == 0
+                && n.Value.SquareNo == cell.Value.SquareNo && (n.Key.X == cell.Key.X || n.Key.Y == cell.Key.Y)).ToList();
+                if (twins is null || twins.Count == 0 || twins.Count > 1)
+                {
+                    continue;
+                }
+                var twin = twins.FirstOrDefault();
+                HashSet<int> possibleValuesForCell = new HashSet<int>(cell.Value.PossibleValues);
+                HashSet<int> possibleValuesForTwin = new HashSet<int>(twin.Value.PossibleValues);
+                if(!possibleValuesForCell.SetEquals(possibleValuesForTwin))
+                {
+                  continue ;
+                }
+                cell.Value.CellValue = cell.Value.PossibleValues[0];
+                twin.Value.CellValue = cell.Value.PossibleValues[1];
+                
+                if (!HasNoDuplicates())
+                {
+
+                    continue;
+                }
+                CheckNewPossibilities();
+
+                // Snapshot to be captured here
+            }
         }
         private static List<int> FindMissingPossibilities(List<int> list)
         {
             List<int> possibleValues = [1, 2, 3, 4, 5, 6, 7, 8, 9];
             return possibleValues.Except(list).ToList();
         }
-        private static void CheckIfFailedToCompleteThePuzzle()
+        private static bool HasNoDuplicatesOrEmptyItems()
         {
-            if (_sudoku.Where(n => n.Value.CellValue == 0).Count() > 0)
-            {
-                Display.WriteYellow("\n\n\nPossible values:\n");
-                foreach (var sudoku in _sudoku.Where(n => n.Value.CellValue == 0))
-                {
-
-                    Console.WriteLine($"({sudoku.Key.X},{sudoku.Key.Y}): {JsonConvert.SerializeObject(sudoku.Value.PossibleValues)}");
-                }
-            }
-        }
-        private static bool CheckForDuplicatesOrEmptyItems()
-        {
-            if (_sudoku.Where(n => n.Value.CellValue == 0).Any())
+            if ( _sudoku.Where(n => n.Value.CellValue == 0).Any())
             {
                 return false;
             }
@@ -201,22 +143,64 @@ namespace sudoku.consoleapp.Services
             }
             return true;
         }
+        private static bool HasNoDuplicates()
+        {
+            foreach (var sudokuItem in _sudoku)
+            {
+                var xValues = _sudoku.Where(n => n.Key.Y == sudokuItem.Key.Y && n.Value.CellValue != 0)
+                    .Select(n => n.Value.CellValue);
+                if (xValues.Distinct().Count() != xValues.Count())
+                {
+                    return false;
+                }
+                var yValues = _sudoku.Where(n => n.Key.X == sudokuItem.Key.X && n.Value.CellValue != 0)
+                .Select(n => n.Value.CellValue);
+                if (yValues.Distinct().Count() != yValues.Count() )
+                {
+                    return false;
+                }
+                var squareValues = _sudoku.Where(n => n.Value.SquareNo == sudokuItem.Value.SquareNo && n.Value.CellValue != 0)
+                .Select(n => n.Value.CellValue);
+                if (squareValues.Distinct().Count() != squareValues.Count())
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
         private static double GetSudokuICellsSolvedPercentage()
         {
-            double totalStartEmptyCells = (double) 81 - _sudoku.Where(n=>n.Value.FromInput).Count();
-            double totalSolved = (double) _sudoku.Where(n=>n.Value.CellValue !=0 && n.Value.FromInput == false).Count();
-            return (totalSolved /  totalStartEmptyCells) * 100;
+            double totalStartEmptyCells = (double)81 - _sudoku.Where(n => n.Value.FromInput).Count();
+            double totalSolved = (double)_sudoku.Where(n => n.Value.CellValue != 0 && n.Value.FromInput == false).Count();
+            return (totalSolved / totalStartEmptyCells) * 100;
         }
         private static string ConvertArrayToTwoDimentionalArray()
         {
             int[] sudokuValues = _sudoku.Select(n => n.Value.CellValue).ToArray();
             int chunkSize = 9;
-            int[][] output =  sudokuValues
+            int[][] output = sudokuValues
             .Select((value, index) => new { value, index })
             .GroupBy(x => x.index / chunkSize)
             .Select(g => g.Select(x => x.value).ToArray())
             .ToArray();
             return JsonConvert.SerializeObject(output);
+        }
+        private static void CheckNewPossibilities()
+        {
+            foreach (var sudokuItem in _sudoku.Where(n => n.Value.CellValue == 0))
+            {
+                var xValues = _sudoku.Where(n => n.Key.Y == sudokuItem.Key.Y && n.Value.CellValue != 0).Select(n => n.Value.CellValue).ToList();
+                var yValues = _sudoku.Where(n => n.Key.X == sudokuItem.Key.X && n.Value.CellValue != 0).Select(n => n.Value.CellValue).ToList();
+                var sValues = _sudoku.Where(n => n.Value.SquareNo == sudokuItem.Value.SquareNo && n.Value.CellValue != 0).Select(n => n.Value.CellValue).ToList();
+                var allNumbers = xValues.Concat(yValues).Concat(sValues).Distinct().ToList();
+                sudokuItem.Value.PossibleValues = FindMissingPossibilities(allNumbers);
+            }
+            var onePossibility = _sudoku.Where(n => n.Value.PossibleValues?.Count == 1 && n.Value.CellValue == 0);
+            foreach (var sudokuItem in onePossibility)
+            {
+                sudokuItem.Value.CellValue = sudokuItem.Value.PossibleValues[0];
+                _counter++;
+            }
         }
     }
 }

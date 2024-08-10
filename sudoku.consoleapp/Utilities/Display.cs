@@ -1,4 +1,5 @@
-﻿using sudoku.consoleapp.Models;
+﻿using Newtonsoft.Json;
+using sudoku.consoleapp.Models;
 
 namespace sudoku.consoleapp.Utilities;
 
@@ -19,6 +20,12 @@ public class Display
     public static void WriteGreen(string str)
     {
         Console.ForegroundColor = ConsoleColor.Green;
+        Console.Write(str);
+        Console.ResetColor();
+    }
+    public static void WriteBlue(string str)
+    {
+        Console.ForegroundColor = ConsoleColor.Blue;
         Console.Write(str);
         Console.ResetColor();
     }
@@ -64,12 +71,12 @@ public class Display
     }
     public static void ShowSudokuValues(int x, int y, int value, bool fromInput)
     {
-        
+
         if (value == 0)
         {
             WriteRed($"{value}");
         }
-        else if(fromInput)
+        else if (fromInput)
         {
             Console.Write($"{value}");
         }
@@ -84,15 +91,36 @@ public class Display
         WriteRed(" -> ");
         Console.WriteLine(data);
     }
-    public static void ShowStats(double success, int retries, double solvedSuccessRate,List<double> solvedPercentagesList)
+    public static void CheckIfFailedToCompleteThePuzzle(Dictionary<SudokuAxis, SudokuItem> sudoku)
+    {
+        if (sudoku.Where(n => n.Value.CellValue == 0).Count() > 0)
+        {
+            Display.WriteYellow("\n\n\nPossible values:\n");
+            foreach (var sudokuItem in sudoku.Where(n => n.Value.CellValue == 0))
+            {
+
+                Console.WriteLine($"({sudokuItem.Key.X},{sudokuItem.Key.Y}): {JsonConvert.SerializeObject(sudokuItem.Value.PossibleValues)}");
+            }
+        }
+    }
+    public static void ShowStats(bool isSuccess, double success, int retries, double solvedSuccessRate, List<double> solvedPercentagesList)
     {
         Console.WriteLine("\n\n[Puzzle stats]:");
-        WriteGreen("\nPuzzle Solved Rate:");
+        WriteBlue("\nNo Duplicates:");
+        if (isSuccess)
+        {
+            WriteYellow($" {isSuccess}");
+        }
+        else
+        {
+            WriteRed($" {isSuccess}");
+        }
+        WriteBlue("\nPuzzle Solved Rate:");
         WriteYellow($" {solvedSuccessRate:#0.00}% ");
-        WriteGreen("\nAverage Success Rate:");
+        WriteBlue("\nAverage Success Rate:");
         WriteYellow($" {success:#0.00}%");
-        WriteGreen("\nAverage Solved  Rate:");
-        WriteYellow($" {(solvedPercentagesList.Sum()/ solvedPercentagesList.Count):#0.00}% ");
+        WriteBlue("\nAverage Solved  Rate:");
+        WriteYellow($" {(solvedPercentagesList.Sum() / solvedPercentagesList.Count):#0.00}% ");
     }
 }
 

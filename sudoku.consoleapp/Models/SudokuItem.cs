@@ -8,5 +8,6 @@ namespace sudoku.consoleapp.Models
         public int CellValue { get; set; }
         public List<int> PossibleValues { get; set; }
         public bool FromInput { get; set; }
+        public bool IsNaked { get; set; }
     }
 }
